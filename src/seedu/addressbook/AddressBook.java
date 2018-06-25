@@ -10,11 +10,21 @@ package seedu.addressbook;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.HashMap;
 
 /*
  * NOTE : =============================================================
@@ -138,14 +148,15 @@ public class AddressBook {
      */
     private static final char INPUT_COMMENT_MARKER = '#';
 
-    /* Trying out new implementation of storage using a Hashmap as opposed to a String array.
+    /*
+     * Trying out new implementation of storage using a Hashmap as opposed to a String array.
      * The constants given below are the keys used to map back to the details of each person.
      */
     private static final String PERSON_PROPERTY_NAME = "name";
     private static final String PERSON_PROPERTY_PHONE = "phone";
     private static final String PERSON_PROPERTY_EMAIL = "email";
 
-  /*
+    /*
      * This variable is declared for the whole class (instead of declaring it
      * inside the readUserCommand() method to facilitate automated testing using
      * the I/O redirection technique. If not, only the first line of the input
@@ -243,17 +254,13 @@ public class AddressBook {
      * @param args full program arguments passed to application main method
      */
     private static void processProgramArgs(String[] args) {
-        if (args.length >= 2) {
-            showToUser(MESSAGE_INVALID_PROGRAM_ARGS);
-            exitProgram();
-        }
-
-        if (args.length == 1) {
-            setupGivenFileForStorage(args[0]);
-        }
-
         if(args.length == 0) {
             setupDefaultFileForStorage();
+        } else if(args.length == 1) {
+            setupGivenFileForStorage(args[0]);
+        } else {
+            showToUser(MESSAGE_INVALID_PROGRAM_ARGS);
+            exitProgram();
         }
     }
 
@@ -263,7 +270,6 @@ public class AddressBook {
      * Exits if the file name is not acceptable.
      */
     private static void setupGivenFileForStorage(String filePath) {
-
         if (!isValidFilePath(filePath)) {
             showToUser(String.format(MESSAGE_INVALID_FILE, filePath));
             exitProgram();
@@ -325,8 +331,9 @@ public class AddressBook {
      * If a file already exists, it must be a regular file.
      */
     private static boolean hasValidFileName(Path filePath) {
-        return filePath.getFileName().toString().lastIndexOf('.') > 0
-                && (!Files.exists(filePath) || Files.isRegularFile(filePath));
+        boolean hasNoReservedChar = filePath.getFileName().toString().lastIndexOf('.') > 0;
+        boolean hasExtension = (!Files.exists(filePath)) || (Files.isRegularFile(filePath)); 
+        return hasNoReservedChar && hasExtension;
     }
 
     /**
@@ -468,8 +475,7 @@ public class AddressBook {
      * @param keywords for searching
      * @return list of persons in full model with name containing some of the keywords
      */
-    private static ArrayList<HashMap<String, String>> getPersonsWithNameContainingAnyKeyword(Collection<String>
-                                                                                               keywords) {
+    private static ArrayList<HashMap<String, String>> getPersonsWithNameContainingAnyKeyword(Collection<String> keywords) {
         final ArrayList<HashMap<String, String>> matchedPersons = new ArrayList<>();
         for (HashMap<String, String> person : getAllPersonsInAddressBook()) {
             final Set<String> wordsInName = new HashSet<>(splitByWhitespace(getNameFromPerson(person)));
@@ -551,7 +557,8 @@ public class AddressBook {
      * @return feedback display message for the operation result
      */
     private static String executeClearAddressBook() {
-        clearAddressBook();
+        ALL_PERSONS.clear();
+        savePersonsToFile(getAllPersonsInAddressBook(), storageFilePath);
         return MESSAGE_ADDRESSBOOK_CLEARED;
     }
 
@@ -794,14 +801,6 @@ public class AddressBook {
      */
     private static ArrayList<HashMap<String, String>> getAllPersonsInAddressBook() {
         return ALL_PERSONS;
-    }
-
-    /**
-     * Clears all persons in the address book and saves changes to file.
-     */
-    private static void clearAddressBook() {
-        ALL_PERSONS.clear();
-        savePersonsToFile(getAllPersonsInAddressBook(), storageFilePath);
     }
 
     /**
