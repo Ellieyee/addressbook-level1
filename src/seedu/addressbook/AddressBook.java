@@ -95,17 +95,17 @@ public class AddressBook {
     private static final String MESSAGE_USING_DEFAULT_FILE = "Using default storage file : " + DEFAULT_STORAGE_FILEPATH;
 
     // These are the prefix strings to define the data type of a command parameter
-    private static final String PERSON_DATA_PREFIX_PHONE = "p/";
-    private static final String PERSON_DATA_PREFIX_EMAIL = "e/";
+    private static final String PERSON_PHONE_PREFIX = "p/";
+    private static final String PERSON_EMAIL_PREFIX = "e/";
 
     private static final String PERSON_STRING_REPRESENTATION = "%1$s " // name
-                                                            + PERSON_DATA_PREFIX_PHONE + "%2$s " // phone
-                                                            + PERSON_DATA_PREFIX_EMAIL + "%3$s"; // email
+                                                            + PERSON_PHONE_PREFIX + "%2$s " // phone
+                                                            + PERSON_EMAIL_PREFIX + "%3$s"; // email
     private static final String COMMAND_ADD_WORD = "add";
     private static final String COMMAND_ADD_DESC = "Adds a person to the address book.";
     private static final String COMMAND_ADD_PARAMETERS = "NAME "
-                                                      + PERSON_DATA_PREFIX_PHONE + "PHONE_NUMBER "
-                                                      + PERSON_DATA_PREFIX_EMAIL + "EMAIL";
+                                                      + PERSON_PHONE_PREFIX + "PHONE_NUMBER "
+                                                      + PERSON_EMAIL_PREFIX + "EMAIL";
     private static final String COMMAND_ADD_EXAMPLE = COMMAND_ADD_WORD + " John Doe p/98765432 e/johnd@gmail.com";
 
     private static final String COMMAND_FIND_WORD = "find";
@@ -152,9 +152,9 @@ public class AddressBook {
      * Trying out new implementation of storage using a Hashmap as opposed to a String array.
      * The constants given below are the keys used to map back to the details of each person.
      */
-    private static final String PERSON_PROPERTY_NAME = "name";
-    private static final String PERSON_PROPERTY_PHONE = "phone";
-    private static final String PERSON_PROPERTY_EMAIL = "email";
+    private static final String PERSON_NAME_KEY = "name";
+    private static final String PERSON_PHONE_KEY = "phone";
+    private static final String PERSON_EMAIL_KEY = "email";
 
     /*
      * This variable is declared for the whole class (instead of declaring it
@@ -254,13 +254,17 @@ public class AddressBook {
      * @param args full program arguments passed to application main method
      */
     private static void processProgramArgs(String[] args) {
-        if(args.length == 0) {
-            setupDefaultFileForStorage();
-        } else if(args.length == 1) {
-            setupGivenFileForStorage(args[0]);
-        } else {
+        if(args.length >= 2) {
             showToUser(MESSAGE_INVALID_PROGRAM_ARGS);
             exitProgram();
+        }
+
+        if(args.length == 1) {
+            setupGivenFileForStorage(args[0]);
+        }
+
+        if(args.length == 0) {
+            setupDefaultFileForStorage();
         }
     }
 
@@ -332,8 +336,7 @@ public class AddressBook {
      */
     private static boolean hasValidFileName(Path filePath) {
         boolean hasNoReservedChar = filePath.getFileName().toString().lastIndexOf('.') > 0;
-        boolean hasExtension = (!Files.exists(filePath)) || (Files.isRegularFile(filePath)); 
-        return hasNoReservedChar && hasExtension;
+        return hasNoReservedChar && (!Files.exists(filePath)) || (Files.isRegularFile(filePath));
     }
 
     /**
@@ -373,11 +376,11 @@ public class AddressBook {
         case COMMAND_CLEAR_WORD:
             return executeClearAddressBook();
         case COMMAND_HELP_WORD:
-            return getUsageInfoForAllCommands();
+            return executeGetUsageInfo();
         case COMMAND_EXIT_WORD:
             executeExitProgramRequest();
         default:
-            return getMessageForInvalidCommandInput(commandType, getUsageInfoForAllCommands());
+            return getMessageForInvalidCommandInput(commandType, executeGetUsageInfo());
         }
     }
 
@@ -558,7 +561,7 @@ public class AddressBook {
      */
     private static String executeClearAddressBook() {
         ALL_PERSONS.clear();
-        savePersonsToFile(getAllPersonsInAddressBook(), storageFilePath);
+        saveChangesToFile();
         return MESSAGE_ADDRESSBOOK_CLEARED;
     }
 
@@ -568,9 +571,9 @@ public class AddressBook {
      * @return feedback display message for the operation result
      */
     private static String executeListAllPersonsInAddressBook() {
-        ArrayList<HashMap<String, String>> toBeDisplayed = getAllPersonsInAddressBook();
-        showToUser(toBeDisplayed);
-        return getMessageForPersonsDisplayedSummary(toBeDisplayed);
+        ArrayList<HashMap<String, String>> personsToBeDisplayed = getAllPersonsInAddressBook();
+        showToUser(personsToBeDisplayed);
+        return getMessageForPersonsDisplayedSummary(personsToBeDisplayed);
     }
 
     /**
@@ -756,9 +759,9 @@ public class AddressBook {
      * @param filePath file for saving
      */
     private static void savePersonsToFile(ArrayList<HashMap<String, String>> persons, String filePath) {
-        final ArrayList<String> linesToWrite = encodePersonsToStrings(persons);
+        final ArrayList<String> listOfPersons = encodePersonsToStrings(persons);
         try {
-            Files.write(Paths.get(storageFilePath), linesToWrite);
+            Files.write(Paths.get(storageFilePath), listOfPersons);
         } catch (IOException ioe) {
             showToUser(String.format(MESSAGE_ERROR_WRITING_TO_FILE, filePath));
             exitProgram();
@@ -804,6 +807,12 @@ public class AddressBook {
     }
 
     /**
+     *  Saves any changes to file
+     */
+    private static void saveChangesToFile() {
+        savePersonsToFile(getAllPersonsInAddressBook(), storageFilePath);
+    }
+    /**
      * Resets the internal model with the given data. Does not save to file.
      *
      * @param persons list of persons to initialise the model with
@@ -826,7 +835,7 @@ public class AddressBook {
      * @param person whose name you want
      */
     private static String getNameFromPerson(HashMap<String, String> person) {
-        return person.get(PERSON_PROPERTY_NAME);
+        return person.get(PERSON_NAME_KEY);
     }
 
     /**
@@ -835,7 +844,7 @@ public class AddressBook {
      * @param person whose phone number you want
      */
     private static String getPhoneFromPerson(HashMap<String, String> person) {
-        return person.get(PERSON_PROPERTY_PHONE);
+        return person.get(PERSON_PHONE_KEY);
     }
 
     /**
@@ -844,7 +853,7 @@ public class AddressBook {
      * @param person whose email you want
      */
     private static String getEmailFromPerson(HashMap<String, String> person) {
-        return person.get(PERSON_PROPERTY_EMAIL);
+        return person.get(PERSON_EMAIL_KEY);
     }
 
     /**
@@ -857,9 +866,9 @@ public class AddressBook {
      */
     private static HashMap<String, String> makePersonFromData(String name, String phone, String email) {
         HashMap<String, String> person = new HashMap<>();
-        person.put(PERSON_PROPERTY_NAME, name);
-        person.put(PERSON_PROPERTY_PHONE, phone);
-        person.put(PERSON_PROPERTY_EMAIL, email);
+        person.put(PERSON_NAME_KEY, name);
+        person.put(PERSON_PHONE_KEY, phone);
+        person.put(PERSON_EMAIL_KEY, email);
         return person;
     }
 
@@ -943,7 +952,7 @@ public class AddressBook {
      * @param personData person string representation
      */
     private static boolean isPersonDataExtractableFrom(String personData) {
-        final String matchAnyPersonDataPrefix = PERSON_DATA_PREFIX_PHONE + '|' + PERSON_DATA_PREFIX_EMAIL;
+        final String matchAnyPersonDataPrefix = PERSON_PHONE_PREFIX + '|' + PERSON_EMAIL_PREFIX;
         final String[] splitArgs = personData.trim().split(matchAnyPersonDataPrefix);
         return splitArgs.length == 3 // 3 arguments
                 && !splitArgs[0].isEmpty() // non-empty arguments
@@ -958,8 +967,8 @@ public class AddressBook {
      * @return name argument
      */
     private static String extractNameFromPersonString(String encoded) {
-        final int indexOfPhonePrefix = encoded.indexOf(PERSON_DATA_PREFIX_PHONE);
-        final int indexOfEmailPrefix = encoded.indexOf(PERSON_DATA_PREFIX_EMAIL);
+        final int indexOfPhonePrefix = encoded.indexOf(PERSON_PHONE_PREFIX);
+        final int indexOfEmailPrefix = encoded.indexOf(PERSON_EMAIL_PREFIX);
         // name is leading substring up to first data prefix symbol
         int indexOfFirstPrefix = Math.min(indexOfEmailPrefix, indexOfPhonePrefix);
         return encoded.substring(0, indexOfFirstPrefix).trim();
@@ -972,19 +981,19 @@ public class AddressBook {
      * @return phone number argument WITHOUT prefix
      */
     private static String extractPhoneFromPersonString(String encoded) {
-        final int indexOfPhonePrefix = encoded.indexOf(PERSON_DATA_PREFIX_PHONE);
-        final int indexOfEmailPrefix = encoded.indexOf(PERSON_DATA_PREFIX_EMAIL);
+        final int indexOfPhonePrefix = encoded.indexOf(PERSON_PHONE_PREFIX);
+        final int indexOfEmailPrefix = encoded.indexOf(PERSON_EMAIL_PREFIX);
 
         // phone is last arg, target is from prefix to end of string
         if (indexOfPhonePrefix > indexOfEmailPrefix) {
             return removePrefixSign(encoded.substring(indexOfPhonePrefix, encoded.length()).trim(),
-                    PERSON_DATA_PREFIX_PHONE);
+                    PERSON_PHONE_PREFIX);
 
         // phone is middle arg, target is from own prefix to next prefix
         } else {
             return removePrefixSign(
                     encoded.substring(indexOfPhonePrefix, indexOfEmailPrefix).trim(),
-                    PERSON_DATA_PREFIX_PHONE);
+                    PERSON_PHONE_PREFIX);
         }
     }
 
@@ -995,19 +1004,19 @@ public class AddressBook {
      * @return email argument WITHOUT prefix
      */
     private static String extractEmailFromPersonString(String encoded) {
-        final int indexOfPhonePrefix = encoded.indexOf(PERSON_DATA_PREFIX_PHONE);
-        final int indexOfEmailPrefix = encoded.indexOf(PERSON_DATA_PREFIX_EMAIL);
+        final int indexOfPhonePrefix = encoded.indexOf(PERSON_PHONE_PREFIX);
+        final int indexOfEmailPrefix = encoded.indexOf(PERSON_EMAIL_PREFIX);
 
         // email is last arg, target is from prefix to end of string
         if (indexOfEmailPrefix > indexOfPhonePrefix) {
             return removePrefixSign(encoded.substring(indexOfEmailPrefix, encoded.length()).trim(),
-                    PERSON_DATA_PREFIX_EMAIL);
+                    PERSON_EMAIL_PREFIX);
 
         // email is middle arg, target is from own prefix to next prefix
         } else {
             return removePrefixSign(
                     encoded.substring(indexOfEmailPrefix, indexOfPhonePrefix).trim(),
-                    PERSON_DATA_PREFIX_EMAIL);
+                    PERSON_EMAIL_PREFIX);
         }
     }
 
@@ -1017,9 +1026,9 @@ public class AddressBook {
      * @param person String array representing the person (used in internal data)
      */
     private static boolean isPersonDataValid(HashMap<String, String> person) {
-        return isPersonNameValid(person.get(PERSON_PROPERTY_NAME))
-                && isPersonPhoneValid(person.get(PERSON_PROPERTY_PHONE))
-                && isPersonEmailValid(person.get(PERSON_PROPERTY_EMAIL));
+        return isPersonNameValid(person.get(PERSON_NAME_KEY))
+                && isPersonPhoneValid(person.get(PERSON_PHONE_KEY))
+                && isPersonEmailValid(person.get(PERSON_EMAIL_KEY));
     }
 
     /*
@@ -1069,7 +1078,7 @@ public class AddressBook {
      */
 
     /** Returns usage info for all commands */
-    private static String getUsageInfoForAllCommands() {
+    private static String executeGetUsageInfo() {
         return getUsageInfoForAddCommand() + LS
                 + getUsageInfoForFindCommand() + LS
                 + getUsageInfoForViewCommand() + LS
