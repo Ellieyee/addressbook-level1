@@ -569,16 +569,31 @@ public class AddressBook {
     }
 
     /**
-     * Displays all persons in the address book to the user; in added order.
+     * Displays all persons in the address book to the user; in alphabetical order.
      *
      * @return feedback display message for the operation result
      */
     private static String executeListAllPersonsInAddressBook() {
         ArrayList<HashMap<String, String>> personsToBeDisplayed = getAllPersonsInAddressBook();
+        sortAlphabetically(personsToBeDisplayed);
         showToUser(personsToBeDisplayed);
         return getMessageForPersonsDisplayedSummary(personsToBeDisplayed);
     }
 
+    /**
+     * Sorts all the persons in the address book to be displayed in alphabetical order
+     *
+     * @param listOfPersons
+     * @return list of persons in sorted order based on their name
+     */
+    private static void sortAlphabetically(ArrayList<HashMap<String, String>> listOfPersons) {
+        Collections.sort(listOfPersons, new HashmapComparator("name") {
+            @Override
+            public int compare(HashMap<String, String> first, HashMap<String, String> second) {
+                return super.compare(first, second);
+            }
+        });
+    }
     /**
      * Requests to terminate the program.
      */
