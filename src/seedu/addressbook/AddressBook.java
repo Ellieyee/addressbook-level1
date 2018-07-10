@@ -446,7 +446,7 @@ public class AddressBook {
      * @return feedback display message for the operation result
      */
     private static String executeFindPersons(String commandArgs) {
-        final Set<String> keywords = extractKeywordsFromFindPersonArgs(commandArgs);
+        final Set<String> keywords = extractKeywordsFromPerson(commandArgs);
         final ArrayList<HashMap<String, String>> personsFound = getPersonsWithNameContainingAnyKeyword(keywords);
         showToUser(personsFound);
         return getMessageForPersonsDisplayedSummary(personsFound);
@@ -463,13 +463,14 @@ public class AddressBook {
     }
 
     /**
-     * Extracts keywords from the command arguments given for the find persons command.
+     * Extracts keywords from the given person's name
      *
-     * @param findPersonCommandArgs full command args string for the find persons command
+     * @param names name(s) of given person
      * @return set of keywords as specified by args
      */
-    private static Set<String> extractKeywordsFromFindPersonArgs(String findPersonCommandArgs) {
-        return new HashSet<>(splitByWhitespace(findPersonCommandArgs.trim()));
+    private static Set<String> extractKeywordsFromPerson(String names) {
+        String namesWithoutCasing = removeCaseSensitivity(names);
+        return new HashSet<>(splitByWhitespace(namesWithoutCasing.trim()));
     }
 
     /**
@@ -481,7 +482,9 @@ public class AddressBook {
     private static ArrayList<HashMap<String, String>> getPersonsWithNameContainingAnyKeyword(Collection<String> keywords) {
         final ArrayList<HashMap<String, String>> matchedPersons = new ArrayList<>();
         for (HashMap<String, String> person : getAllPersonsInAddressBook()) {
-            final Set<String> wordsInName = new HashSet<>(splitByWhitespace(getNameFromPerson(person)));
+            final Set<String> wordsInName = extractKeywordsFromPerson(getNameFromPerson(person));
+            //final Set<String> nameWithoutCasing = removeCaseSensitivity(wordsInName);
+            //final Set<String> keywordsWithoutCasing = removeCaseSensitivity(keywords);
             if (!Collections.disjoint(wordsInName, keywords)) {
                 matchedPersons.add(person);
             }
@@ -1159,6 +1162,15 @@ public class AddressBook {
      */
     private static ArrayList<String> splitByWhitespace(String toSplit) {
         return new ArrayList<>(Arrays.asList(toSplit.trim().split("\\s+")));
+    }
+
+    /**
+     * converts all characters in a string to lowercase letters to remove case sensitivity
+     * @param names
+     * @return names converted to all lowercase letters
+     */
+    private static String removeCaseSensitivity(String names) {
+        return names.toLowerCase();
     }
 
 }
